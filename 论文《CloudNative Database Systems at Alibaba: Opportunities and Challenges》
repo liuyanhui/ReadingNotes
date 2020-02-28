@@ -1,0 +1,59 @@
+这是阿里巴巴数据库负责人发表的一篇论文。介绍了阿里云主要的云原生数据库产品，如：POLARDB，POLARDB-X，AnalyticDB，SDDP等。
+
+Abstract
+解耦计算和存储，以提供优秀的系统弹性。
+
+1.Introduction
+云数据库是连接Iaas和Saas的枢纽，它把底层资源IaaS和上层应用服务SaaS连接起来。
+为了保持低延迟，采用RDMA等技术降低数据在传输过程中的损耗。 
+采用软硬件联合设计的方式，充分利用高性能的硬件资源。
+
+2.ARCHITECTURES FOR DATABASE SYSTEMS AT ALIBABA
+有三种数据库系统架构：single instance,  shared everything(shared storage), shared nothing。详见论文。
+POLARDB属于shared everything。为了避免写冲突和分布式事务引发的问题，会有一个节点处理所有的写请求。
+Shared storage架构有自身限制。第一，在compute和storage节点之间的数据传输无法保证低延迟。当数据传输跨数据中心/跨区域时，并且本地网络使用RDMA时，延迟更加明显。第二，只读节点的数量也是有限制的。
+为了解决上诉Shared storage架构的缺点，我们需要一种shared nothing的架构。在这种模式下，一个数据库被分割成多个shards，每个shard是一个节点。Google的Spanner是代表，阿里云的POLARDB-X也是代表。
+
+混合的shared-nothing和shared-storage也有很多优点。在POLARDB-X中有体现。
+
+3.OTHER KEY FEATURES OF ALIBABA DATABASE SYSTEMS
+
+3.1Multi-Model Analysis
+southbound and northbound multi-model access。分别代表了底层数据结构和数据源的多样性和上层用户接口的简单化。
+
+3.2 Autonomy and Intelligence
+
+3.3 Software-Hardware Co-Design
+
+3.4 High Availability
+一种典型的高可用解决方案就是replication。
+银行等金融结构为了保证更高的可用性，会强制保持4个以上的副本，并且部署在不同的区域。
+阿里巴巴的数据库系统，在保证C和P的情况下，通过并行paoxs协议(X-paoxs)保证A。X-paoxs实现和优化了成熟的复制技术和一致性协议，通过logs保证数据一致性和可用性。
+
+4.  ALIBABA CLOUD-NATIVE DATABASES
+POLARDB是一种shards-storage 的OLTP数据库。它的分布式版本是POLARDB-X（一个 sharded shared-nothing OLTP database 基于 POLARDB之上）。AnalyticDB(a real-time interactive OLAP database), and SDDP (an autonomous database operation platform)
+
+4.1 POLARDB: cloud-native OLTP database
+架构图详见论文。
+所有节点共享redo和数据文件。（注：没有binlog）
+设计有点：1.计算和存储解耦。针对计算和存储可以使用不同的硬件，如：计算节点不需要内存和磁盘的容量比例。2.打破了单节点数据库(如：MySQL和PostgreSQL)的限制。减少碎片风险，使用不均衡，存储空间的浪费等问题。存储服务的容量和吞吐率可以轻易扩容。3.所有数据都保存在存储集群上，计算节点不再需要维护本地持久化状态，这样可以ease和fast的迁移数据。数据可靠性也得到了改善，因为使用了PolarFS提供的数据复制技术和高可用特性。
+
+4.2 POLARDB-X:distributed OLTP database
+
+POLARDB可以支持十几个节点，但是无法有效支持如11这种级别的高并发的负载。POLARDB-X是基于POLARDB的分布式的shared-nothing的OLTP数据库，它结合了shared-storage 和 shared-nothing。普通使用single-node实例作为shard的分布式数据库相比，POLARDB-X的每个shard的能力很强，因为他们都是POLARDB。所以它可以减少shard的数量。
+
+介绍了X-Engine。它是阿里巴巴基于的LSM-tree的OLTP存储引擎。
+
+4.3 AnalyticDB: realtime OLAP datawarehouse
+它是实时的OLAP数据库，有高并发、低延迟、实时分析查询的特点，支持PB级别。
+
+有三个挑战：1.用户的复杂分析请求，并且要求低延迟；2.在复杂分析需求的趋势下整合不同query和data；3.在提供实时查询的同时，还支持海量数据的写入。
+
+挑战解决办法：1.所有的column都建index。index在off-peak期间，异步创建。通过轻量级的sorted-index保证实时写入数据的查询。2…..
+
+4.4 SDDP: Self-Driving Database Platform
+四个步骤：data collection,data processing, decision making, and execution
+
+5. APPLICATIONS AND OPERATIONS
+阿里云上有将近50W的数据库实例，包括阿里自有业务和外部用户业务。
+
